@@ -1,6 +1,9 @@
-function qualquerNome(request, response) {
-  // response.status(200).send("Minha resposta (são é olá)");
-  response.status(200).json({ chave: "Minha resposta (são é olá) aa" });
+import database from "../../../../infra/database.js";
+
+async function status(request, response) {
+  const result = await database.query("SELECT 1 + 1;");
+  console.log(result.rows);
+  response.status(200).json({ chave: "Minha resposta (são é olá)" });
 }
 
-export default qualquerNome;
+export default status;
