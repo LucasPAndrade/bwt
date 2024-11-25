@@ -4,6 +4,6 @@ services:
     # environment:
     #   POSTGRES_PASSWORD: "minha_senha"
     env_file:
-      - ../.env
+      - ../.env.development
     ports:
       - "5432:5432"
