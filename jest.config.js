@@ -1,3 +1,3 @@
 module.exports = {
-  setupFiles: ["<rootDir>/jest.setup.js"], //Configuração global
+  setupFiles: ["<rootDir>/jest.setup.js"],
 };
