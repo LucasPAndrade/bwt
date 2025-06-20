@@ -7,6 +7,7 @@ beforeAll(async () => {
 });
 
 test("POST to /api/v1/migrations should return 200", async () => {
+  // eslint-disable-next-line no-undef
   const response1 = await fetch(`${TEST_BASE_URL}/api/v1/migrations`, {
     method: "POST",
   });
@@ -17,6 +18,7 @@ test("POST to /api/v1/migrations should return 200", async () => {
   expect(Array.isArray(response1Body)).toBe(true);
   expect(response1Body.length).toBeGreaterThan(0);
 
+  // eslint-disable-next-line no-undef
   const response2 = await fetch(`${TEST_BASE_URL}/api/v1/migrations`, {
     method: "POST",
   });
