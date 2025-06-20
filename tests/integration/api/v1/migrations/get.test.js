@@ -7,6 +7,7 @@ beforeAll(async () => {
 });
 
 test("GET to /api/v1/migrations should return 200", async () => {
+  // eslint-disable-next-line no-undef
   const response = await fetch(`${TEST_BASE_URL}/api/v1/migrations`);
   expect(response.status).toBe(200);
 
