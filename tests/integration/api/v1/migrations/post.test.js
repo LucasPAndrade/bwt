@@ -11,9 +11,12 @@ describe("POST /api/v1/migrations", () => {
     describe("Running pendins migrations", () => {
       test("For the first time", async () => {
         // eslint-disable-next-line no-undef
-        const response1 = await fetch(`${TEST_BASE_URL}/api/v1/migrations`, {
-          method: "POST",
-        });
+        const response1 = await fetch(
+          "http://localhost:3000/api/v1/migrations",
+          {
+            method: "POST",
+          },
+        );
 
         expect(response1.status).toBe(201);
 
@@ -25,9 +28,12 @@ describe("POST /api/v1/migrations", () => {
 
       test("For the second time", async () => {
         // eslint-disable-next-line no-undef
-        const response2 = await fetch(`${TEST_BASE_URL}/api/v1/migrations`, {
-          method: "POST",
-        });
+        const response2 = await fetch(
+          "http://localhost:3000/api/v1/migrations",
+          {
+            method: "POST",
+          },
+        );
         expect(response2.status).toBe(200);
 
         const response2Body = await response2.json();

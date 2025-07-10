@@ -8,7 +8,7 @@ describe("GET /api/v1/status", () => {
   describe("Anonymous user", () => {
     test("Retrieving current system status", async () => {
       // eslint-disable-next-line no-undef
-      const response = await fetch(`${TEST_BASE_URL}/api/v1/status`);
+      const response = await fetch("http://localhost:3000/api/v1/status");
       expect(response.status).toBe(200);
 
       //Test "Updated At"
