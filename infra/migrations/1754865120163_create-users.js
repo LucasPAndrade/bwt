@@ -13,8 +13,19 @@ exports.up = (pgm) => {
       unique: true,
     },
 
+    username_normalized: {
+      type: "varchar(39)",
+      notNull: true,
+      unique: true,
+    },
+
     // Email limited to 254 characters, see https://stackoverflow.com/a/1199238
     email: {
+      type: "varchar(254)",
+      notNull: true,
+      unique: true,
+    },
+    email_normalized: {
       type: "varchar(254)",
       notNull: true,
       unique: true,
