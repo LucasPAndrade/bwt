@@ -1,3 +1,3 @@
-# clone-tabnews
+# big-wig-tech
 
-Implementation of https://tabnews.com.br for https://curso.dev
+This is a learning-focused project to practice building scalable web applications.
