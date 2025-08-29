@@ -20,7 +20,7 @@ describe("PUT /api/v1/migrations", () => {
         name: "MethodNotAllowedError",
         message: "Método não permitido para este endpoint.",
         action: "Verifique se o método HTTP é válido para este endpoint",
-        statusCode: 405,
+        status_code: 405,
       });
     });
   });
