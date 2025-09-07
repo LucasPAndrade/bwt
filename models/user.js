@@ -1,4 +1,5 @@
 import database from "infra/database.js";
+import password from "models/password.js";
 import { ValidationError, NotFoundError } from "infra/errors.js";
 
 const REQUIRED_FIELDS = ["username", "email", "password"];
@@ -19,6 +20,7 @@ async function create(userInputValues) {
   // Orchestrates the overall process for creating a new user
   const normalizedUser = normalizeUserData(userInputValues);
   await validate(normalizedUser);
+  await hashPasswordInObject(normalizedUser);
 
   const newUser = await runInsertQuery(normalizedUser);
   return newUser;
@@ -26,6 +28,11 @@ async function create(userInputValues) {
   // --- Implementation Details ---
   // Handles the underlying implementation details
   // async function validateUniqueEmail(email) {}
+
+  async function hashPasswordInObject(userInputValues) {
+    const hashPassword = await password.hash(userInputValues.password);
+    userInputValues.password = hashPassword;
+  }
 
   async function runInsertQuery(user) {
     const results = await database.query({
