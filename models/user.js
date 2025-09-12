@@ -1,4 +1,5 @@
 import database from "infra/database.js";
+import password from "models/password.js";
 import { ValidationError, NotFoundError } from "infra/errors.js";
 
 const REQUIRED_FIELDS = ["username", "email", "password"];
@@ -19,6 +20,7 @@ async function create(userInputValues) {
   // Orchestrates the overall process for creating a new user
   const normalizedUser = normalizeUserData(userInputValues);
   await validate(normalizedUser);
+  await hashPasswordInObject(normalizedUser);
 
   const newUser = await runInsertQuery(normalizedUser);
   return newUser;
@@ -43,6 +45,62 @@ async function create(userInputValues) {
         user.email,
         user.email_normalized,
         user.password,
+      ],
+    });
+
+    return results.rows[0];
+  }
+}
+
+async function update(username, userInputValues) {
+  // --- Flow Management ---
+  // Orchestrates the overall process for updating a user
+  const currentUser = await findOneByUsername(username);
+
+  if ("username" in userInputValues) {
+    const normalizedUsernameValue = normalizeUsername(userInputValues.username);
+    await validateUniqueUsername(normalizedUsernameValue);
+    userInputValues.username_normalized = normalizedUsernameValue;
+  }
+  if ("email" in userInputValues) {
+    const normalizedEmailValue = normalizeEmail(userInputValues.email);
+    await validateUniqueEmail(normalizedEmailValue);
+    userInputValues.email_normalized = normalizedEmailValue;
+  }
+  if ("password" in userInputValues) {
+    await hashPasswordInObject(userInputValues);
+  }
+
+  const userWithNewValues = { ...currentUser, ...userInputValues };
+  const updatedUser = await runUptadeQuery(userWithNewValues);
+  return updatedUser;
+
+  // --- Implementation Details ---
+  // Handles the underlying implementation details
+  async function runUptadeQuery(userWithNewValues) {
+    const results = await database.query({
+      text: `
+        UPDATE
+          users
+        SET
+          username = $2,
+          username_normalized = $3,
+          email = $4,
+          email_normalized = $5,
+          password = $6,
+          updated_at = timezone('utc',now())
+        WHERE
+          id = $1
+        RETURNING
+          *
+        `,
+      values: [
+        userWithNewValues.id,
+        userWithNewValues.username,
+        userWithNewValues.username_normalized,
+        userWithNewValues.email,
+        userWithNewValues.email_normalized,
+        userWithNewValues.password,
       ],
     });
 
@@ -103,29 +161,35 @@ async function validate(normalizedUser) {
   }
 
   // --- Validação de regras de negócio ---
-  // E-mail duplicado
+  // Cadastros duplicados
+  await validateUniqueUsername(normalizedUser.username_normalized);
+  await validateUniqueEmail(normalizedUser.email_normalized);
+}
+
+async function validateUniqueEmail(email) {
   const existingEmail = await database.query({
     text: "SELECT email_normalized FROM users WHERE email_normalized = $1",
-    values: [normalizedUser.email_normalized],
+    values: [email],
   });
 
   if (existingEmail.rowCount > 0) {
     throw new ValidationError({
       message: "O e-mail informado já está sendo utilizado.",
-      action: "Utilize outro e-mail para realizar o cadastro.",
+      action: "Utilize outro e-mail para realizar esta operação.",
     });
   }
+}
 
-  // Username duplicado
+async function validateUniqueUsername(username) {
   const existingUser = await database.query({
     text: "SELECT username_normalized FROM users WHERE username_normalized = $1",
-    values: [normalizedUser.username_normalized],
+    values: [username],
   });
 
   if (existingUser.rowCount > 0) {
     throw new ValidationError({
       message: "O username informado já está sendo utilizado.",
-      action: "Utilize outro username para realizar o cadastro.",
+      action: "Utilize outro username para realizar esta operação.",
     });
   }
 }
@@ -152,8 +216,14 @@ function normalizeUsername(username) {
   return normalizedUsername;
 }
 
+async function hashPasswordInObject(userInputValues) {
+  const hashPassword = await password.hash(userInputValues.password);
+  userInputValues.password = hashPassword;
+}
+
 const user = {
   create,
+  update,
   findOneByUsername,
 };
 
