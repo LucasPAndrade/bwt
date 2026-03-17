@@ -108,12 +108,11 @@ async function update(username, userInputValues) {
   }
 }
 
-async function findOneByUsername(username) {
-  const normalizedUsername = normalizeUsername(username);
-  const userFound = await runSelectQuery(normalizedUsername);
+async function findOneById(id) {
+  const userFound = await runSelectQuery(id);
   return userFound;
 
-  async function runSelectQuery(username) {
+  async function runSelectQuery(id) {
     const results = await database.query({
       text: `
         SELECT
@@ -121,17 +120,17 @@ async function findOneByUsername(username) {
         FROM
           users
         WHERE
-          username_normalized = $1
+          id = $1
         LIMIT
           1
       ;`,
-      values: [username],
+      values: [id],
     });
 
     if (results.rowCount === 0) {
       throw new NotFoundError({
-        message: "O username informado não foi encontrado no sistema.",
-        action: "Verifique se o username está digitado corretamente.",
+        message: "O userId informado não foi encontrado no sistema.",
+        action: "Verifique se o userId está digitado corretamente.",
       });
     }
 
@@ -163,6 +162,37 @@ async function findOneByEmail(email) {
       throw new NotFoundError({
         message: "O email informado não foi encontrado no sistema.",
         action: "Verifique se o email está digitado corretamente.",
+      });
+    }
+
+    return results.rows[0];
+  }
+}
+
+async function findOneByUsername(username) {
+  const normalizedUsername = normalizeUsername(username);
+  const userFound = await runSelectQuery(normalizedUsername);
+  return userFound;
+
+  async function runSelectQuery(username) {
+    const results = await database.query({
+      text: `
+        SELECT
+          *
+        FROM
+          users
+        WHERE
+          username_normalized = $1
+        LIMIT
+          1
+      ;`,
+      values: [username],
+    });
+
+    if (results.rowCount === 0) {
+      throw new NotFoundError({
+        message: "O username informado não foi encontrado no sistema.",
+        action: "Verifique se o username está digitado corretamente.",
       });
     }
 
@@ -255,6 +285,7 @@ async function hashPasswordInObject(userInputValues) {
 const user = {
   create,
   update,
+  findOneById,
   findOneByUsername,
   findOneByEmail,
 };
