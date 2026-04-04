@@ -43,7 +43,7 @@ async function findOneValidByToken(sessionToken) {
 async function renew(sessionId) {
   // --- Flow management ---
   const expiresAt = calculateExpiresAtDate();
-  const renewedSessionObject = runUpdateQuery(sessionId, expiresAt);
+  const renewedSessionObject = await runUpdateQuery(sessionId, expiresAt);
 
   return renewedSessionObject;
 
@@ -72,7 +72,7 @@ async function expireById(sessionId) {
   // --- Flow management ---
   const expiresAt = new Date(Date.now() - EXPIRATION_IN_MILLISECONDS - 1000);
 
-  const expiredSessionObject = runUpdateQuery(sessionId, expiresAt);
+  const expiredSessionObject = await runUpdateQuery(sessionId, expiresAt);
 
   return expiredSessionObject;
 
