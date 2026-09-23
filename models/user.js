@@ -21,6 +21,7 @@ async function create(userInputValues) {
   const normalizedUser = normalizeUserData(userInputValues);
   await validate(normalizedUser);
   await hashPasswordInObject(normalizedUser);
+  injectDefaultFeaturesInObject(normalizedUser);
 
   const newUser = await runInsertQuery(normalizedUser);
   return newUser;
@@ -33,9 +34,9 @@ async function create(userInputValues) {
     const results = await database.query({
       text: `
       INSERT INTO 
-        users (username, username_normalized, email, email_normalized, password)
+        users (username, username_normalized, email, email_normalized, password, features)
       VALUES
-          ($1, $2, $3, $4, $5)
+          ($1, $2, $3, $4, $5, $6)
       RETURNING
         *
         `,
@@ -45,10 +46,15 @@ async function create(userInputValues) {
         user.email,
         user.email_normalized,
         user.password,
+        user.features,
       ],
     });
 
     return results.rows[0];
+  }
+
+  function injectDefaultFeaturesInObject(userInputValues) {
+    userInputValues.features = ["read:activation_token"];
   }
 }
 
