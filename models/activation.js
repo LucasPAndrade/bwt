@@ -1,8 +1,10 @@
 import email from "infra/email.js";
 import database from "infra/database.js";
 import webserver from "infra/webserver.js";
+import { NotFoundError } from "infra/errors.js";
 
 const EXPIRATION_TIME_IN_MILLISECONDS = 60 * 15 * 1000; // 15 minutes
+const ACTIVATION_BASE_URL = `${webserver.origin}/cadastro/ativar/`;
 
 async function create(userId) {
   const expiresAt = new Date(Date.now() + EXPIRATION_TIME_IN_MILLISECONDS);
@@ -27,11 +29,11 @@ async function create(userId) {
   }
 }
 
-async function findOneByUserId(userId) {
-  const newToken = await runSelectQuery(userId);
-  return newToken;
+async function findOneValidById(tokenId) {
+  const validToken = await runSelectQuery(tokenId);
+  return validToken;
 
-  async function runSelectQuery(userId) {
+  async function runSelectQuery(tokenId) {
     const results = await database.query({
       text: `
         SELECT
@@ -39,25 +41,34 @@ async function findOneByUserId(userId) {
         FROM
           user_activation_tokens
         WHERE
-          user_id = $1
+          id = $1
+          AND expires_at > NOW()
+          AND used_at IS NULL
         LIMIT
           1
       `,
-      values: [userId],
+      values: [tokenId],
     });
+
+    if (results.rowCount === 0) {
+      throw new NotFoundError({
+        message: "Token de ativação utilizado não foi encontrado ou expirou.",
+        action: "Submeta um novo cadastro.",
+      });
+    }
 
     return results.rows[0];
   }
 }
 
-async function sendEmailToUser(user, activationToken) {
+async function sendActivationEmail(user, activationToken) {
   await email.send({
     from: "Big Wig Tech <contato@bwt.com.br>",
     to: user.email,
     subject: "Ative seu cadastro",
     text: `${user.username}, clique no link abaixo para ativar seu cadastro:
 
-${webserver.origin}/cadastro/ativar/${activationToken.id}
+${ACTIVATION_BASE_URL}${activationToken.id}
 
 Atenciosamente,
 Equipe Big Wig Tech
@@ -65,10 +76,24 @@ Equipe Big Wig Tech
   });
 }
 
+function extractActivationTokenFromEmail(emailText) {
+  const activationTokenRegex = new RegExp(
+    `${ACTIVATION_BASE_URL}([a-zA-Z0-9-]+)`,
+  );
+  const match = emailText.match(activationTokenRegex);
+
+  // if (match && match[1]) {
+  //   return match[1];
+  // }
+  return match ? match[1] : null;
+}
+
 const activation = {
   create,
-  findOneByUserId,
-  sendEmailToUser,
+  findOneValidById,
+  sendActivationEmail,
+  extractActivationTokenFromEmail,
+  ACTIVATION_BASE_URL,
 };
 
 export default activation;

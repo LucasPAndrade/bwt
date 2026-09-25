@@ -48,17 +48,23 @@ describe("Use case: Registration flow (all successful)", () => {
   test("Receive activation email", async () => {
     const lastEmail = await orchestrator.getLastEmail();
 
-    const activationToken = await activation.findOneByUserId(
-      createUserResponseBody.id,
+    expect(lastEmail.sender).toBe("<contato@bwt.com.br>");
+    expect(lastEmail.recipients[0]).toBe(`<${createUserResponseBody.email}>`);
+    expect(lastEmail.subject).toBe("Ative seu cadastro");
+    expect(lastEmail.text).toContain(createUserResponseBody.username);
+
+    const activationTokenId = activation.extractActivationTokenFromEmail(
+      lastEmail.text,
     );
 
-    expect(lastEmail.sender).toBe("<contato@bwt.com.br>");
-    expect(lastEmail.recipients[0]).toBe("<registration.flow@curso.dev>");
-    expect(lastEmail.subject).toBe("Ative seu cadastro");
-    expect(lastEmail.text).toContain("RegistrationFlow");
-    expect(lastEmail.text).toContain(activationToken.id);
+    const activationTokenObject =
+      await activation.findOneValidById(activationTokenId);
 
-    console.log(lastEmail.text);
+    expect(lastEmail.text).toContain(
+      activation.ACTIVATION_BASE_URL + activationTokenId,
+    );
+    expect(activationTokenObject.user_id).toBe(createUserResponseBody.id);
+    expect(activationTokenObject.used_at).toBe(null);
   });
 
   test("Activate account", async () => {});
