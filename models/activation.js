@@ -2,6 +2,7 @@ import email from "infra/email.js";
 import database from "infra/database.js";
 import webserver from "infra/webserver.js";
 import { NotFoundError } from "infra/errors.js";
+import user from "models/user.js";
 
 const EXPIRATION_TIME_IN_MILLISECONDS = 60 * 15 * 1000; // 15 minutes
 const ACTIVATION_BASE_URL = `${webserver.origin}/cadastro/ativar/`;
@@ -27,6 +28,21 @@ async function create(userId) {
 
     return results.rows[0];
   }
+}
+
+async function sendActivationEmail(user, activationToken) {
+  await email.send({
+    from: "Big Wig Tech <contato@bwt.com.br>",
+    to: user.email,
+    subject: "Ative seu cadastro",
+    text: `${user.username}, clique no link abaixo para ativar seu cadastro:
+
+${ACTIVATION_BASE_URL}${activationToken.id}
+
+Atenciosamente,
+Equipe Big Wig Tech
+    `,
+  });
 }
 
 async function findOneValidById(tokenId) {
@@ -61,19 +77,33 @@ async function findOneValidById(tokenId) {
   }
 }
 
-async function sendActivationEmail(user, activationToken) {
-  await email.send({
-    from: "Big Wig Tech <contato@bwt.com.br>",
-    to: user.email,
-    subject: "Ative seu cadastro",
-    text: `${user.username}, clique no link abaixo para ativar seu cadastro:
+async function markTokenAsUsed(activationTokenId) {
+  const usedActivationToken = await runUpdateQuery(activationTokenId);
+  return usedActivationToken;
 
-${ACTIVATION_BASE_URL}${activationToken.id}
+  async function runUpdateQuery(activationTokenId) {
+    const results = await database.query({
+      text: `
+        UPDATE
+          user_activation_tokens
+        SET
+          used_at = timezone('utc', now()),
+          updated_at = timezone('utc', now())
+        WHERE
+          id = $1
+        RETURNING
+          *
+      `,
+      values: [activationTokenId],
+    });
 
-Atenciosamente,
-Equipe Big Wig Tech
-    `,
-  });
+    return results.rows[0];
+  }
+}
+
+async function activateUserByUserId(userId) {
+  const activatedUser = await user.setFeatures(userId, ["create:session"]);
+  return activatedUser;
 }
 
 function extractActivationTokenFromEmail(emailText) {
@@ -93,6 +123,8 @@ const activation = {
   findOneValidById,
   sendActivationEmail,
   extractActivationTokenFromEmail,
+  markTokenAsUsed,
+  activateUserByUserId,
   ACTIVATION_BASE_URL,
 };
 
