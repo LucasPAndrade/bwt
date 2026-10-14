@@ -5,8 +5,9 @@ import { NotFoundError, UnauthorizedError } from "infra/errors.js";
 async function getAuthenticatedUser(providedEmail, providedPassword) {
   try {
     const storedUser = await findUserByEmail(providedEmail);
-    await validatePassword(providedPassword, storedUser.password);
 
+    await validatePassword(providedPassword, storedUser.password);
+    console.log("User authenticated successfully:", storedUser.username);
     return storedUser;
   } catch (error) {
     if (error instanceof UnauthorizedError) {

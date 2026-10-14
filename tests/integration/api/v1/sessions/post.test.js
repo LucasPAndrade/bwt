@@ -95,10 +95,14 @@ describe("POST /api/v1/sessions", () => {
 
     test("With correct `email` and corret `password`", async () => {
       // eslint-disable-next-line no-undef
+      const password = "senhaCorreta";
+
       const createdUser = await orchestrator.createUser({
         email: "emailcorreto@email.com",
-        password: "senhaCorreta",
+        password,
       });
+
+      await orchestrator.activateUser(createdUser);
 
       const response = await fetch("http://localhost:3000/api/v1/sessions", {
         method: "POST",
@@ -106,8 +110,8 @@ describe("POST /api/v1/sessions", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: "emailcorreto@email.com",
-          password: "senhaCorreta",
+          email: createdUser.email,
+          password,
         }),
       });
 
