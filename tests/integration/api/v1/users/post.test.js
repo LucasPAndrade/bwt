@@ -183,4 +183,38 @@ describe("POST /api/v1/users", () => {
       }
     });
   });
+
+  describe("Default user", () => {
+    test("With unique and valid data", async () => {
+      // User1 is created and activated
+      const user1 = await orchestrator.createUser();
+      await orchestrator.activateUser(user1);
+      const user1SessionObject = await orchestrator.createSession(user1.id);
+
+      // Try to create user2 with user1's session cookie, which should fail because user1 is a default user and does not have permission to create new users
+      const user2Response = await fetch("http://localhost:3000/api/v1/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `session_id=${user1SessionObject.token}`,
+        },
+        body: JSON.stringify({
+          username: "usuariologado",
+          email: "usuariologado@email.com",
+          password: "senha123",
+        }),
+      });
+
+      expect(user2Response.status).toBe(403);
+
+      const user2ResponseBody = await user2Response.json();
+
+      expect(user2ResponseBody).toEqual({
+        name: "ForbiddenError",
+        message: "Você não tem permissão para realizar esta ação.",
+        action: 'Verifique se o seu usuário possui a feature "create:user"',
+        status_code: 403,
+      });
+    });
+  });
 });

@@ -4,7 +4,9 @@ import user from "models/user.js";
 import activation from "models/activation.js";
 
 const router = new createRouter();
-router.post(postHandler);
+
+router.use(controller.injectAnonymousOrUser); //Middleware `injectAnonymousOrUser` injects either an anonymous user or an authenticated user into the request context, based on the session cookie
+router.post(controller.canRequest("create:user"), postHandler); //Middleware `canRequest` checks if the user has the required feature to read session information
 
 export default router.handler(controller.errorHandlers);
 
