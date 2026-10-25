@@ -1,15 +1,15 @@
 import email from "infra/email.js";
 import database from "infra/database.js";
 import webserver from "infra/webserver.js";
-import { NotFoundError } from "infra/errors.js";
+import { NotFoundError, ForbiddenError } from "infra/errors.js";
 import user from "models/user.js";
+import authorization from "./authorization";
 
 const EXPIRATION_TIME_IN_MILLISECONDS = 60 * 15 * 1000; // 15 minutes
 const ACTIVATION_BASE_URL = `${webserver.origin}/cadastro/ativar/`;
 
 async function create(userId) {
   const expiresAt = new Date(Date.now() + EXPIRATION_TIME_IN_MILLISECONDS);
-
   const newToken = await runInsertQuery(userId, expiresAt);
   return newToken;
 
@@ -102,6 +102,15 @@ async function markTokenAsUsed(activationTokenId) {
 }
 
 async function activateUserByUserId(userId) {
+  const usertoActivate = await user.findOneById(userId);
+
+  if (!authorization.can(usertoActivate, "read:activation_token")) {
+    throw new ForbiddenError({
+      message: "Você não tem permissão para ativar este usuário.",
+      action: "Entre em contato com o suporte.",
+    });
+  }
+
   const activatedUser = await user.setFeatures(userId, [
     "create:session",
     "read:session",
@@ -129,6 +138,7 @@ const activation = {
   markTokenAsUsed,
   activateUserByUserId,
   ACTIVATION_BASE_URL,
+  EXPIRATION_TIME_IN_MILLISECONDS,
 };
 
 export default activation;
